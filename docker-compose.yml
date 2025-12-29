@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
@@ -8,13 +10,19 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:7.0.1
     hostname: kafka
     container_name: kafka
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - "9092:9092"
     environment:
@@ -24,8 +32,14 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_LOG_RETENTION_BYTES: ${KAFKA_RETENTION_BYTES}
-      KAFKA_LOG_RETENTION_MS: ${KAFKA_RETENTION_MS}
+      KAFKA_LOG_RETENTION_BYTES: ${KAFKA_RETENTION_BYTES:-536870912}
+      KAFKA_LOG_RETENTION_MS: ${KAFKA_RETENTION_MS:-86400000}
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -35,13 +49,14 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
-    healthcheck:   # ✅ Added healthcheck
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-password}
+    healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   influxdb:
     image: influxdb:1.8
@@ -49,30 +64,36 @@ services:
     ports:
       - "8086:8086"
     environment:
-      INFLUXDB_DB: ${INFLUXDB_DB}
-      INFLUXDB_ADMIN_USER: ${INFLUXDB_ADMIN_USER}
-      INFLUXDB_ADMIN_PASS: ${INFLUXDB_ADMIN_PASS}
-      INFLUXDB_USER: ${INFLUXDB_USER}
-      INFLUXDB_USER_PASS: ${INFLUXDB_USER_PASS}
+      INFLUXDB_DB: ${INFLUXDB_DB:-telemetry}
+      INFLUXDB_ADMIN_USER: ${INFLUXDB_ADMIN_USER:-admin}
+      INFLUXDB_ADMIN_PASSWORD: ${INFLUXDB_ADMIN_PASS:-adminpassword}
+      INFLUXDB_USER: ${INFLUXDB_USER:-telegraf}
+      INFLUXDB_USER_PASSWORD: ${INFLUXDB_USER_PASS:-telegrafpassword}
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   telegraf:
     image: telegraf:1.28
     container_name: telegraf
     depends_on:
       influxdb:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
-        condition: service_healthy   # ✅ Wait for RabbitMQ health
+        condition: service_healthy
     volumes:
       - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
     environment:
       - INFLUXDB_URL=http://influxdb:8086
-      - INFLUXDB_USERNAME=${INFLUXDB_USER}
-      - INFLUXDB_PASSWORD=${INFLUXDB_USER_PASS}
-      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
-      - TELEMETRY_QUEUE=${TELEMETRY_QUEUE}
-      - LLM_QUEUE=${LLM_QUEUE}
-    restart: unless-stopped  # ✅ Retry if RabbitMQ not ready
+      - INFLUXDB_USERNAME=${INFLUXDB_USER:-telegraf}
+      - INFLUXDB_PASSWORD=${INFLUXDB_USER_PASS:-telegrafpassword}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER:-user}:${RABBITMQ_DEFAULT_PASS:-password}@rabbitmq:5672/
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:10.0.0
@@ -83,54 +104,79 @@ services:
       - "3000:3000"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
     environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASS}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASS:-grafanapassword}
+      INFLUXDB_USERNAME: ${INFLUXDB_USER:-telegraf}
+      INFLUXDB_PASSWORD: ${INFLUXDB_USER_PASS:-telegrafpassword}
+    restart: unless-stopped
 
   producer:
     build: ./producer
     container_name: producer
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     volumes:
       - ./config.yaml:/app/config.yaml
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - TELEMETRY_TOPIC=${TELEMETRY_TOPIC}
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  vsat_producer:
+    build: ./producer
+    container_name: vsat_producer
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - PYTHONUNBUFFERED=1
+    command: python -u vsat_producer.py
+    restart: unless-stopped
 
   router:
     build: ./router
     container_name: router
     depends_on:
-      - kafka
-      - rabbitmq
+      kafka:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     volumes:
       - ./config.yaml:/app/config.yaml
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - TELEMETRY_TOPIC=${TELEMETRY_TOPIC}
-      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
-      - TELEMETRY_QUEUE=${TELEMETRY_QUEUE}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER:-user}:${RABBITMQ_DEFAULT_PASS:-password}@rabbitmq:5672/
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
 
   analyzer:
     build: ./analyzer
     container_name: analyzer
     depends_on:
-      - rabbitmq
-      - influxdb
+      rabbitmq:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
     volumes:
       - ./config.yaml:/app/config.yaml
     environment:
-      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
-      - LLM_QUEUE=${LLM_QUEUE}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER:-user}:${RABBITMQ_DEFAULT_PASS:-password}@rabbitmq:5672/
       - XAI_API_KEY=${XAI_API_KEY}
       - INFLUXDB_URL=http://influxdb:8086
-      - INFLUXDB_USERNAME=${INFLUXDB_USER}
-      - INFLUXDB_PASSWORD=${INFLUXDB_USER_PASS}
-      - INFLUXDB_DB=${INFLUXDB_DB}
-      - ANALYZER_WORKERS=${ANALYZER_WORKERS}
-      - ANALYZER_PREFETCH=${ANALYZER_PREFETCH}
-      - ANALYZER_BATCH_SIZE=${ANALYZER_BATCH_SIZE}
+      - INFLUXDB_USERNAME=${INFLUXDB_USER:-telegraf}
+      - INFLUXDB_PASSWORD=${INFLUXDB_USER_PASS:-telegrafpassword}
+      - INFLUXDB_DB=${INFLUXDB_DB:-telemetry}
+      - ANALYZER_WORKERS=${ANALYZER_WORKERS:-4}
+      - ANALYZER_PREFETCH=${ANALYZER_PREFETCH:-10}
+      - ANALYZER_BATCH_SIZE=${ANALYZER_BATCH_SIZE:-10}
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
 
   prometheus:
     image: prom/prometheus:latest
@@ -139,14 +185,18 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
 
   node_exporter:
     image: prom/node-exporter:latest
     container_name: node_exporter
     ports:
       - "9100:9100"
+    restart: unless-stopped
 
   kafka_exporter:
     image: danielqsj/kafka-exporter:latest
@@ -155,6 +205,10 @@ services:
       - "9308:9308"
     command:
       - "--kafka.server=kafka:9092"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
 
   rabbitmq_exporter:
     image: kbudde/rabbitmq-exporter
@@ -163,19 +217,19 @@ services:
       - "9419:9419"
     environment:
       RABBIT_URL: http://rabbitmq:15672
-      RABBIT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBIT_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+      RABBIT_USER: ${RABBITMQ_DEFAULT_USER:-user}
+      RABBIT_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-password}
       PUBLISH_PORT: 9419
-
-  vsat_producer:
-    build: ./producer
-    container_name: vsat_producer
     depends_on:
-      - kafka
-    volumes:
-      - ./config.yaml:/app/config.yaml
-    environment:
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - PYTHONUNBUFFERED=1
-    command: python -u vsat_producer.py
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
 
+volumes:
+  influxdb-data:
+  grafana-data:
+  prometheus-data:
+
+networks:
+  default:
+    name: satelliteops-network
