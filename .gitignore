@@ -1,0 +1,47 @@
+# Environment files
+.env
+*.env
+!.env.example
+
+# Logs
+logs/
+*.log
+combined_logs.log
+
+# Docker
+docker-compose.override.yml
+
+# Kubernetes secrets (real ones, not templates)
+k8s/*-secret.yaml
+!k8s/secrets.yaml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# Backup files
+*.bak
+*.backup
+
+# Data directories (if persisted locally)
+data/
+volumes/
+influxdb-data/
+grafana-data/
+prometheus-data/
