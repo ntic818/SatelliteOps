@@ -1,0 +1,7 @@
+RabbitMQ user/password
+Grafana admin/grafanapassword
+
+docker exec -it kafka kafka-console-consumer \
+  --bootstrap-server kafka:9092 \
+  --topic telemetry.vsat \
+  --from-beginning

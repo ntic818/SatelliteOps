@@ -1,0 +1,10 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY kafka_to_rabbitmq.py .
+
+CMD ["python", "kafka_to_rabbitmq.py"]

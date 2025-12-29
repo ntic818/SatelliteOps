@@ -1,0 +1,9 @@
+kafka-python==2.0.2
+tenacity==8.2.3
+pyyaml==6.0.1
+
+# SNMP (PINNED for compatibility)
+pysnmp==4.4.12
+pyasn1==0.4.8
+pyasn1-modules==0.2.8
+
