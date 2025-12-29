@@ -1,40 +1,22 @@
-\# SatelliteOps - Complete Deployment Guide
+# SatelliteOps - Complete Deployment Guide
 
+## 🚀 Quick Start
 
+### Prerequisites
 
-\## 🚀 Quick Start
+- Docker & Docker Compose (for local deployment)
 
+- Kubernetes cluster (for K8s deployment)
 
+- kubectl configured
 
-\### Prerequisites
+- xAI API Key (get from https://x.ai)
 
-\- Docker \& Docker Compose (for local deployment)
+## 📋 Before You Start
 
-\- Kubernetes cluster (for K8s deployment)
-
-\- kubectl configured
-
-\- xAI API Key (get from https://x.ai)
-
-
-
----
-
-
-
-\## 📋 Before You Start
-
-
-
-\### 1. Replace Fixed Files
-
-
+### 1. Replace Fixed Files
 
 Copy these fixed files to your project:
-
-
-
-```bash
 
 \# Copy fixed router
 
@@ -51,42 +33,16 @@ cp /path/to/fixed/llm\_analyzer.py analyzer/llm\_analyzer.py
 \# Copy updated docker-compose
 
 cp /path/to/updated/docker-compose.yml docker-compose.yml
+### 2. Configure Your xAI API Key
 
-```
-
-
-
-\### 2. Configure Your xAI API Key
-
-
-
-Edit `.env` file:
-
-```bash
+Edit .env file:
 
 XAI\_API\_KEY=your\_actual\_xai\_api\_key\_here
+**Get your key from**: https://x.ai/api
 
-```
+## 🐳 Docker Compose Deployment (Recommended for Testing)
 
-
-
-\*\*Get your key from\*\*: https://x.ai/api
-
-
-
----
-
-
-
-\## 🐳 Docker Compose Deployment (Recommended for Testing)
-
-
-
-\### Step 1: Build Docker Images
-
-
-
-```bash
+### Step 1: Build Docker Images
 
 \# Build all services
 
@@ -101,16 +57,7 @@ docker-compose build producer
 docker-compose build router
 
 docker-compose build analyzer
-
-```
-
-
-
-\### Step 2: Start All Services
-
-
-
-```bash
+### Step 2: Start All Services
 
 \# Start everything in background
 
@@ -121,16 +68,7 @@ docker-compose up -d
 \# Or start with logs visible
 
 docker-compose up
-
-```
-
-
-
-\### Step 3: Verify Services
-
-
-
-```bash
+### Step 3: Verify Services
 
 \# Check all containers are running
 
@@ -139,16 +77,7 @@ docker-compose ps
 
 
 \# Expected output: all services should be "Up"
-
-```
-
-
-
-\### Step 4: Monitor Logs
-
-
-
-```bash
+### Step 4: Monitor Logs
 
 \# View all logs
 
@@ -169,18 +98,9 @@ docker-compose logs -f analyzer
 \# Check for errors
 
 docker-compose logs | grep -i error
+### Step 5: Verify Data Flow
 
-```
-
-
-
-\### Step 5: Verify Data Flow
-
-
-
-\#### Check Kafka Topics
-
-```bash
+#### Check Kafka Topics
 
 docker exec -it kafka kafka-topics \\
 
@@ -191,14 +111,7 @@ docker exec -it kafka kafka-topics \\
 
 
 \# Should see: telemetry.raw, telemetry.power, telemetry.health, etc.
-
-```
-
-
-
-\#### Check RabbitMQ Queues
-
-```bash
+#### Check RabbitMQ Queues
 
 \# Access RabbitMQ Management UI
 
@@ -211,14 +124,7 @@ open http://localhost:15672
 \# Or via API
 
 curl -u user:password http://localhost:15672/api/queues
-
-```
-
-
-
-\#### Check InfluxDB Data
-
-```bash
+#### Check InfluxDB Data
 
 \# Query telemetry data
 
@@ -233,14 +139,7 @@ curl -G 'http://localhost:8086/query?db=telemetry' \\
 curl -G 'http://localhost:8086/query?db=telemetry' \\
 
 &nbsp; --data-urlencode "q=SELECT \* FROM insights LIMIT 10"
-
-```
-
-
-
-\#### Access Grafana Dashboard
-
-```bash
+#### Access Grafana Dashboard
 
 \# Open browser
 
@@ -257,16 +156,7 @@ Password: grafanapassword
 
 
 \# Navigate to "Satellite Telemetry Dashboard"
-
-```
-
-
-
-\### Step 6: Test End-to-End Flow
-
-
-
-```bash
+### Step 6: Test End-to-End Flow
 
 \# 1. Verify producer is sending data
 
@@ -291,24 +181,9 @@ docker logs analyzer | tail -20
 curl -G 'http://localhost:8086/query?db=telemetry' \\
 
 &nbsp; --data-urlencode "q=SELECT count(\*) FROM insights"
+## ☸️ Kubernetes Deployment
 
-```
-
-
-
----
-
-
-
-\## ☸️ Kubernetes Deployment
-
-
-
-\### Step 1: Build and Push Docker Images
-
-
-
-```bash
+### Step 1: Build and Push Docker Images
 
 \# Login to your Docker registry
 
@@ -333,56 +208,22 @@ docker push your-docker-repo/satelliteops-producer:latest
 docker push your-docker-repo/satelliteops-router:latest
 
 docker push your-docker-repo/satelliteops-analyzer:latest
+### Step 2: Update Image References
 
-```
-
-
-
-\### Step 2: Update Image References
-
-
-
-Edit `k8s/all-deployments.yaml` and replace:
-
-```yaml
+Edit k8s/all-deployments.yaml and replace:
 
 image: your-docker-repo/satelliteops-producer:latest
-
-```
-
 with your actual registry path.
 
+### Step 3: Configure Secrets
 
-
-\### Step 3: Configure Secrets
-
-
-
-Edit `k8s/secrets.yaml` and add your actual xAI API key:
-
-```yaml
+Edit k8s/secrets.yaml and add your actual xAI API key:
 
 XAI\_API\_KEY: "your\_actual\_xai\_api\_key\_here"
-
-```
-
-
-
-\*\*For production\*\*, encode secrets:
-
-```bash
+**For production**, encode secrets:
 
 echo -n 'your\_xai\_api\_key' | base64
-
-```
-
-
-
-\### Step 4: Deploy to Kubernetes
-
-
-
-```bash
+### Step 4: Deploy to Kubernetes
 
 \# Create namespace (optional)
 
@@ -407,16 +248,7 @@ kubectl apply -f k8s/all-deployments.yaml
 kubectl get pods
 
 kubectl get services
-
-```
-
-
-
-\### Step 5: Check Pod Status
-
-
-
-```bash
+### Step 5: Check Pod Status
 
 \# Watch pods starting
 
@@ -429,16 +261,7 @@ kubectl get pods -w
 \# Check for any errors
 
 kubectl get pods | grep -v Running
-
-```
-
-
-
-\### Step 6: Check Logs
-
-
-
-```bash
+### Step 6: Check Logs
 
 \# Check producer
 
@@ -461,16 +284,7 @@ kubectl logs -f deployment/analyzer
 \# Check for errors across all pods
 
 kubectl logs -l app=analyzer | grep -i error
-
-```
-
-
-
-\### Step 7: Access Services
-
-
-
-```bash
+### Step 7: Access Services
 
 \# Port forward Grafana
 
@@ -497,16 +311,7 @@ open http://localhost:3000  # Grafana
 open http://localhost:9090  # Prometheus
 
 open http://localhost:15672 # RabbitMQ
-
-```
-
-
-
-\### Step 8: Verify Data Flow
-
-
-
-```bash
+### Step 8: Verify Data Flow
 
 \# Check Kafka topics
 
@@ -521,22 +326,9 @@ kubectl exec -it deployment/kafka -- kafka-topics \\
 kubectl exec -it deployment/influxdb -- \\
 
 &nbsp; influx -database telemetry -execute 'SELECT \* FROM insights LIMIT 10'
+## 🧪 Testing & Validation
 
-```
-
-
-
----
-
-
-
-\## 🧪 Testing \& Validation
-
-
-
-\### Test 1: Producer → Kafka
-
-```bash
+### Test 1: Producer → Kafka
 
 \# Check producer logs for "Sent to telemetry.\*"
 
@@ -547,14 +339,7 @@ docker logs producer | grep "Sent to"
 \# Should see messages like:
 
 \# Sent to telemetry.power: {'timestamp': ..., 'power\_level': ...}
-
-```
-
-
-
-\### Test 2: Router → RabbitMQ
-
-```bash
+### Test 2: Router → RabbitMQ
 
 \# Check router logs for "Routed to"
 
@@ -565,14 +350,7 @@ docker logs router | grep "Routed to"
 \# Should see messages routed to BOTH queues:
 
 \# Routed to telemetry\_power\_queue and llm\_power\_queue
-
-```
-
-
-
-\### Test 3: Telegraf → InfluxDB
-
-```bash
+### Test 3: Telegraf → InfluxDB
 
 \# Verify telegraf is consuming from RabbitMQ
 
@@ -589,14 +367,7 @@ curl -G 'http://localhost:8086/query?db=telemetry' \\
 
 
 \# Should see: amqp\_consumer
-
-```
-
-
-
-\### Test 4: Analyzer → InfluxDB
-
-```bash
+### Test 4: Analyzer → InfluxDB
 
 \# Check analyzer logs for "Analysis complete"
 
@@ -613,14 +384,7 @@ curl -G 'http://localhost:8086/query?db=telemetry' \\
 
 
 \# Should see LLM-generated insights
-
-```
-
-
-
-\### Test 5: Grafana Visualization
-
-```bash
+### Test 5: Grafana Visualization
 
 \# Login to Grafana
 
@@ -639,226 +403,94 @@ open http://localhost:3000
 \# - Anomaly frequency (line graph)
 
 \# - Severity heatmap
+## 🐛 Troubleshooting
 
-```
+### Problem: Analyzer not receiving messages
 
-
-
----
-
-
-
-\## 🐛 Troubleshooting
-
-
-
-\### Problem: Analyzer not receiving messages
-
-
-
-\*\*Symptoms:\*\*
-
-```bash
+**Symptoms:**
 
 docker logs analyzer
 
 \# Shows: "Starting worker for llm\_power\_queue..."
 
 \# But no "Analysis complete" messages
+**Solution:**
 
-```
-
-
-
-\*\*Solution:\*\*
-
-1\. Check router is sending to LLM queues:
-
-```bash
+1. Check router is sending to LLM queues:
 
 docker logs router | grep "llm\_"
-
-```
-
-
-
-2\. Verify LLM queues exist in RabbitMQ:
-
-```bash
+2. Verify LLM queues exist in RabbitMQ:
 
 curl -u user:password http://localhost:15672/api/queues | jq '.\[].name'
-
-```
-
-
-
-3\. Check analyzer queue connection:
-
-```bash
+3. Check analyzer queue connection:
 
 docker logs analyzer | grep "Connecting to RabbitMQ"
+### Problem: LLM API errors
 
-```
-
-
-
-\### Problem: LLM API errors
-
-
-
-\*\*Symptoms:\*\*
-
-```bash
+**Symptoms:**
 
 docker logs analyzer | grep "LLM API error"
+**Solutions:**
 
-```
-
-
-
-\*\*Solutions:\*\*
-
-1\. Verify API key is set:
-
-```bash
+1. Verify API key is set:
 
 docker exec analyzer printenv XAI\_API\_KEY
+2. Check API key is valid at https://x.ai
 
-```
+3. Check rate limits on xAI API
 
+### Problem: No data in InfluxDB
 
-
-2\. Check API key is valid at https://x.ai
-
-
-
-3\. Check rate limits on xAI API
-
-
-
-\### Problem: No data in InfluxDB
-
-
-
-\*\*Symptoms:\*\*
-
-```bash
+**Symptoms:**
 
 curl -G 'http://localhost:8086/query?db=telemetry' \\
 
 &nbsp; --data-urlencode "q=SELECT \* FROM amqp\_consumer LIMIT 1"
 
 \# Returns empty result
+**Solutions:**
 
-```
-
-
-
-\*\*Solutions:\*\*
-
-1\. Check Telegraf is running:
-
-```bash
+1. Check Telegraf is running:
 
 docker logs telegraf | grep -i error
-
-```
-
-
-
-2\. Verify RabbitMQ queues have messages:
-
-```bash
+2. Verify RabbitMQ queues have messages:
 
 curl -u user:password http://localhost:15672/api/queues
-
-```
-
-
-
-3\. Check Telegraf config:
-
-```bash
+3. Check Telegraf config:
 
 docker exec telegraf cat /etc/telegraf/telegraf.conf
+### Problem: Services not starting in Kubernetes
 
-```
-
-
-
-\### Problem: Services not starting in Kubernetes
-
-
-
-\*\*Symptoms:\*\*
-
-```bash
+**Symptoms:**
 
 kubectl get pods
 
 \# Shows pods in "CrashLoopBackOff" or "Error"
+**Solutions:**
 
-```
-
-
-
-\*\*Solutions:\*\*
-
-1\. Check pod logs:
-
-```bash
+1. Check pod logs:
 
 kubectl logs pod-name
 
 kubectl describe pod pod-name
-
-```
-
-
-
-2\. Verify secrets are created:
-
-```bash
+2. Verify secrets are created:
 
 kubectl get secrets
 
 kubectl describe secret app-secrets
-
-```
-
-
-
-3\. Check configmaps:
-
-```bash
+3. Check configmaps:
 
 kubectl get configmaps
 
 kubectl describe configmap app-config
+## 📊 Monitoring
 
-```
-
-
-
----
-
-
-
-\## 📊 Monitoring
-
-
-
-\### Prometheus Metrics
-
-
+### Prometheus Metrics
 
 Access Prometheus: http://localhost:9090
 
-
-
 Key queries:
 
-```promql
 
 \# Kafka message rate
 
@@ -882,71 +514,42 @@ rate(container\_cpu\_usage\_seconds\_total\[5m])
 
 container\_memory\_usage\_bytes
 
-```
-
-
-
-\### Grafana Dashboards
-
-
+### Grafana Dashboards
 
 Access Grafana: http://localhost:3000
 
+**Pre-configured dashboards:**
 
+1. Satellite Telemetry Dashboard
 
-\*\*Pre-configured dashboards:\*\*
+  - Temperature trends
 
-1\. Satellite Telemetry Dashboard
+  - LLM insights
 
-&nbsp;  - Temperature trends
+  - Anomaly frequency
 
-&nbsp;  - LLM insights
+  - Severity heatmap
 
-&nbsp;  - Anomaly frequency
+2. System Monitoring (create from Prometheus datasource)
 
-&nbsp;  - Severity heatmap
+  - CPU usage
 
+  - Memory usage
 
+  - Network I/O
 
-2\. System Monitoring (create from Prometheus datasource)
+  - Disk usage
 
-&nbsp;  - CPU usage
+## 🔧 Maintenance
 
-&nbsp;  - Memory usage
+### Scaling Services
 
-&nbsp;  - Network I/O
-
-&nbsp;  - Disk usage
-
-
-
----
-
-
-
-\## 🔧 Maintenance
-
-
-
-\### Scaling Services
-
-
-
-\*\*Docker Compose:\*\*
-
-```bash
+**Docker Compose:**
 
 \# Scale analyzer to 3 instances
 
 docker-compose up -d --scale analyzer=3
-
-```
-
-
-
-\*\*Kubernetes:\*\*
-
-```bash
+**Kubernetes:**
 
 \# Scale analyzer replicas
 
@@ -959,18 +562,9 @@ kubectl scale deployment analyzer --replicas=3
 kubectl autoscale deployment analyzer \\
 
 &nbsp; --min=2 --max=10 --cpu-percent=80
+### Backup Data
 
-```
-
-
-
-\### Backup Data
-
-
-
-\*\*InfluxDB:\*\*
-
-```bash
+**InfluxDB:**
 
 \# Backup
 
@@ -985,14 +579,7 @@ docker cp influxdb:/tmp/backup ./influxdb-backup
 docker cp ./influxdb-backup influxdb:/tmp/restore
 
 docker exec influxdb influxd restore -portable /tmp/restore
-
-```
-
-
-
-\*\*Grafana:\*\*
-
-```bash
+**Grafana:**
 
 \# Export dashboards
 
@@ -1001,18 +588,9 @@ curl -u admin:grafanapassword \\
 &nbsp; http://localhost:3000/api/dashboards/uid/satellite-dashboard \\
 
 &nbsp; > dashboard-backup.json
+### Update Services
 
-```
-
-
-
-\### Update Services
-
-
-
-\*\*Docker Compose:\*\*
-
-```bash
+**Docker Compose:**
 
 \# Pull latest images
 
@@ -1023,14 +601,7 @@ docker-compose pull
 \# Rebuild and restart
 
 docker-compose up -d --build
-
-```
-
-
-
-\*\*Kubernetes:\*\*
-
-```bash
+**Kubernetes:**
 
 \# Update image
 
@@ -1049,26 +620,11 @@ kubectl rollout status deployment/analyzer
 \# Rollback if needed
 
 kubectl rollout undo deployment/analyzer
+## 🎯 Performance Tuning
 
-```
+### Analyzer Optimization
 
-
-
----
-
-
-
-\## 🎯 Performance Tuning
-
-
-
-\### Analyzer Optimization
-
-
-
-Edit `.env` or K8s secrets:
-
-```bash
+Edit .env or K8s secrets:
 
 \# Increase workers for higher throughput
 
@@ -1085,132 +641,76 @@ ANALYZER\_BATCH\_SIZE=20
 \# Increase prefetch for better queue utilization
 
 ANALYZER\_PREFETCH=20
-
-```
-
-
-
-\### Kafka Optimization
-
-
-
-```bash
+### Kafka Optimization
 
 \# Increase retention for longer history
 
 KAFKA\_RETENTION\_BYTES=1073741824  # 1GB
 
 KAFKA\_RETENTION\_MS=604800000      # 7 days
-
-```
-
-
-
-\### InfluxDB Optimization
-
-
-
-```bash
+### InfluxDB Optimization
 
 \# Configure retention policy
 
 docker exec influxdb influx -execute \\
 
 &nbsp; "CREATE RETENTION POLICY telemetry\_30d ON telemetry DURATION 30d REPLICATION 1"
-
-```
-
-
-
----
-
-
-
-\## ✅ Success Criteria
-
-
+## ✅ Success Criteria
 
 Your deployment is successful when:
 
+1. ✅ All containers/pods are running
 
+2. ✅ Producer sends messages to Kafka topics
 
-1\. ✅ All containers/pods are running
+3. ✅ Router forwards messages to both telemetry and LLM queues
 
-2\. ✅ Producer sends messages to Kafka topics
+4. ✅ Telegraf consumes from telemetry queues and writes to InfluxDB
 
-3\. ✅ Router forwards messages to both telemetry and LLM queues
+5. ✅ Analyzer consumes from LLM queues and processes batches
 
-4\. ✅ Telegraf consumes from telemetry queues and writes to InfluxDB
+6. ✅ LLM insights appear in InfluxDB
 
-5\. ✅ Analyzer consumes from LLM queues and processes batches
+7. ✅ Grafana displays real-time data and insights
 
-6\. ✅ LLM insights appear in InfluxDB
+8. ✅ Prometheus metrics are being collected
 
-7\. ✅ Grafana displays real-time data and insights
+9. ✅ No error messages in logs
 
-8\. ✅ Prometheus metrics are being collected
+10. ✅ VSAT producer successfully polls SNMP data
 
-9\. ✅ No error messages in logs
-
-10\. ✅ VSAT producer successfully polls SNMP data
-
-
-
----
-
-
-
-\## 🆘 Support
-
-
+## 🆘 Support
 
 If you encounter issues:
 
+1. **Check logs first**: docker-compose logs or kubectl logs
 
+2. **Verify configuration**: Check .env, config.yaml, secrets
 
-1\. \*\*Check logs first\*\*: `docker-compose logs` or `kubectl logs`
+3. **Test connectivity**: Use docker exec to test connections between services
 
-2\. \*\*Verify configuration\*\*: Check `.env`, `config.yaml`, secrets
+4. **Monitor resources**: Check CPU, memory, disk usage
 
-3\. \*\*Test connectivity\*\*: Use `docker exec` to test connections between services
+5. **Review this guide**: Follow troubleshooting steps
 
-4\. \*\*Monitor resources\*\*: Check CPU, memory, disk usage
+## 🎓 Next Steps
 
-5\. \*\*Review this guide\*\*: Follow troubleshooting steps
+1. **Customize dashboards**: Add your own metrics and visualizations
 
+2. **Add alerting**: Configure Prometheus alerts for anomalies
 
+3. **Extend analysis**: Customize LLM prompts for your use case
 
----
+4. **Add more VSATs**: Update config.yaml with additional VSAT configurations
 
+5. **Implement CI/CD**: Automate builds and deployments
 
+6. **Add authentication**: Secure Grafana, RabbitMQ, and other services
 
-\## 🎓 Next Steps
+7. **Enable HTTPS**: Configure SSL/TLS for production
 
+**Deployment Date**: {{ 30/12/2025 }}
 
+**Version**: 1.0.0
 
-1\. \*\*Customize dashboards\*\*: Add your own metrics and visualizations
-
-2\. \*\*Add alerting\*\*: Configure Prometheus alerts for anomalies
-
-3\. \*\*Extend analysis\*\*: Customize LLM prompts for your use case
-
-4\. \*\*Add more VSATs\*\*: Update `config.yaml` with additional VSAT configurations
-
-5\. \*\*Implement CI/CD\*\*: Automate builds and deployments
-
-6\. \*\*Add authentication\*\*: Secure Grafana, RabbitMQ, and other services
-
-7\. \*\*Enable HTTPS\*\*: Configure SSL/TLS for production
-
-
-
----
-
-
-
-\*\*Deployment Date\*\*: {{ 30/12/2025 }}  
-
-\*\*Version\*\*: 1.0.0  
-
-\*\*Status\*\*: Production Ready ✅
-
+**Status**: Production Ready ✅
