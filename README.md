@@ -416,7 +416,7 @@ See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for detailed troubleshooting.
 
 ## 📚 Documentation
 
-- [Deployment Guide](DEPLOYMENT_GUIDE.md) - Complete setup instructions
+- [Deployment Guide](Deployment Guide.md) - Complete setup instructions
 - [Architecture](docs/ARCHITECTURE.md) - Detailed system design
 - [API Reference](docs/API.md) - xAI Grok integration
 - [Configuration](docs/CONFIGURATION.md) - All configuration options
@@ -456,7 +456,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 - **Issues**: [GitHub Issues](https://github.com/ntic818/SatelliteOps/issues)
 - **Documentation**: [Wiki](https://github.com/ntic818/SatelliteOps/wiki)
-- **Email**: your-email@example.com
+- **Email**: ntic818@gmail.com
 
 ---
 
