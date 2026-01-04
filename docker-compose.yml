@@ -167,7 +167,6 @@ services:
       - ./config.yaml:/app/config.yaml
     environment:
       - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER:-user}:${RABBITMQ_DEFAULT_PASS:-password}@rabbitmq:5672/
-      - XAI_API_KEY=${XAI_API_KEY}
       - INFLUXDB_URL=http://influxdb:8086
       - INFLUXDB_USERNAME=${INFLUXDB_USER:-telegraf}
       - INFLUXDB_PASSWORD=${INFLUXDB_USER_PASS:-telegrafpassword}
@@ -175,6 +174,14 @@ services:
       - ANALYZER_WORKERS=${ANALYZER_WORKERS:-4}
       - ANALYZER_PREFETCH=${ANALYZER_PREFETCH:-10}
       - ANALYZER_BATCH_SIZE=${ANALYZER_BATCH_SIZE:-10}
+      # Multi-provider LLM configuration
+      - LLM_PROVIDER=${LLM_PROVIDER:-xai}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - XAI_MODEL=${XAI_MODEL:-grok-beta}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-flash}
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
 
