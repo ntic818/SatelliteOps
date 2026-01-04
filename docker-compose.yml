@@ -164,7 +164,7 @@ services:
       influxdb:
         condition: service_healthy
     volumes:
-      - ./config.yaml:/app/config.yaml
+    - ./config.yaml:/app/config.yaml
     environment:
       - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER:-user}:${RABBITMQ_DEFAULT_PASS:-password}@rabbitmq:5672/
       - INFLUXDB_URL=http://influxdb:8086
