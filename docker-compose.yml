@@ -175,7 +175,7 @@ services:
       - ANALYZER_PREFETCH=${ANALYZER_PREFETCH:-10}
       - ANALYZER_BATCH_SIZE=${ANALYZER_BATCH_SIZE:-10}
       # Multi-provider LLM configuration
-      - LLM_PROVIDER=${LLM_PROVIDER:-xai}
+      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
       - XAI_API_KEY=${XAI_API_KEY}
       - XAI_MODEL=${XAI_MODEL:-grok-beta}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
