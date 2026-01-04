@@ -606,16 +606,12 @@ spec:
       - name: analyzer
         image: your-docker-repo/satelliteops-analyzer:latest
         env:
+        # RabbitMQ & InfluxDB (unchanged)
         - name: RABBITMQ_URL
           valueFrom:
             secretKeyRef:
               name: app-secrets
               key: RABBITMQ_URL
-        - name: XAI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: app-secrets
-              key: XAI_API_KEY
         - name: INFLUXDB_URL
           valueFrom:
             secretKeyRef:
@@ -651,6 +647,44 @@ spec:
             secretKeyRef:
               name: app-secrets
               key: ANALYZER_BATCH_SIZE
+        
+        # Multi-provider LLM configuration
+        - name: LLM_PROVIDER
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: LLM_PROVIDER
+        - name: XAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: XAI_API_KEY
+        - name: XAI_MODEL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: XAI_MODEL
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: OPENAI_API_KEY
+        - name: OPENAI_MODEL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: OPENAI_MODEL
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: GEMINI_API_KEY
+        - name: GEMINI_MODEL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: GEMINI_MODEL
+        
         volumeMounts:
         - name: config
           mountPath: /app/config.yaml
@@ -769,4 +803,5 @@ spec:
   - protocol: TCP
     port: 9100
     targetPort: 9100
+
   type: ClusterIP
