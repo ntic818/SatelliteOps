@@ -53,8 +53,8 @@ check_prerequisites() {
     fi
     
     # Check Docker Compose
-    if command -v docker-compose &> /dev/null; then
-        COMPOSE_VERSION=$(docker-compose --version | cut -d ' ' -f4 | cut -d ',' -f1)
+    if command -v docker compose &> /dev/null; then
+        COMPOSE_VERSION=$(docker compose --version | cut -d ' ' -f4 | cut -d ',' -f1)
         log_success "Docker Compose found: $COMPOSE_VERSION"
     else
         log_error "Docker Compose not found. Please install Docker Compose first."
@@ -108,15 +108,15 @@ build_images() {
     print_header "Building Docker Images"
     
     log_info "Building producer image..."
-    docker-compose build producer
+    docker compose build producer
     log_success "Producer built"
     
     log_info "Building router image..."
-    docker-compose build router
+    docker compose build router
     log_success "Router built"
     
     log_info "Building analyzer image..."
-    docker-compose build analyzer
+    docker compose build analyzer
     log_success "Analyzer built"
 }
 
@@ -125,19 +125,19 @@ start_services() {
     print_header "Starting Services"
     
     log_info "Starting infrastructure services (Kafka, RabbitMQ, InfluxDB)..."
-    docker-compose up -d zookeeper kafka rabbitmq influxdb
+    docker compose up -d zookeeper kafka rabbitmq influxdb
     
     log_info "Waiting for infrastructure to be ready (30s)..."
     sleep 30
     
     log_info "Starting Telegraf and Grafana..."
-    docker-compose up -d telegraf grafana
+    docker compose up -d telegraf grafana
     
     log_info "Starting application services..."
-    docker-compose up -d producer vsat_producer router analyzer
+    docker compose up -d producer vsat_producer router analyzer
     
     log_info "Starting monitoring services..."
-    docker-compose up -d prometheus node_exporter kafka_exporter rabbitmq_exporter
+    docker compose up -d prometheus node_exporter kafka_exporter rabbitmq_exporter
     
     log_success "All services started"
 }
@@ -185,14 +185,14 @@ verify_deployment() {
     
     # Check all containers are running
     log_info "Checking container status..."
-    RUNNING=$(docker-compose ps | grep "Up" | wc -l)
-    TOTAL=$(docker-compose ps | tail -n +2 | wc -l)
+    RUNNING=$(docker compose ps | grep "Up" | wc -l)
+    TOTAL=$(docker compose ps | tail -n +2 | wc -l)
     
     if [ "$RUNNING" -eq "$TOTAL" ]; then
         log_success "All $TOTAL containers are running"
     else
         log_warning "$RUNNING out of $TOTAL containers are running"
-        docker-compose ps
+        docker compose ps
     fi
     
     # Check producer is sending messages
@@ -251,9 +251,9 @@ show_access_info() {
     echo "   Prometheus: http://localhost:9090     (no auth)"
     echo ""
     echo "📊 Quick Commands:"
-    echo "   View logs:           docker-compose logs -f"
-    echo "   Check status:        docker-compose ps"
-    echo "   Stop services:       docker-compose down"
+    echo "   View logs:           docker compose logs -f"
+    echo "   Check status:        docker compose ps"
+    echo "   Stop services:       docker compose down"
     echo "   View producer logs:  docker logs -f producer"
     echo "   View analyzer logs:  docker logs -f analyzer"
     echo ""
@@ -269,7 +269,7 @@ show_logs() {
     print_header "Service Logs (Press Ctrl+C to exit)"
     
     sleep 2
-    docker-compose logs -f --tail=50
+    docker compose logs -f --tail=50
 }
 
 # Main menu
@@ -309,7 +309,7 @@ show_menu() {
             ;;
         3)
             print_header "Stopping Services"
-            docker-compose down
+            docker compose down
             log_success "All services stopped"
             ;;
         4)
@@ -322,7 +322,7 @@ show_menu() {
             print_header "Cleaning Up"
             read -p "This will remove all containers and volumes. Continue? (y/n): " confirm
             if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-                docker-compose down -v
+                docker compose down -v
                 log_success "All containers and volumes removed"
             else
                 log_info "Cleanup cancelled"

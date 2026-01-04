@@ -13,8 +13,8 @@ else
 fi
 
 # Check services
-RUNNING=$(docker-compose ps | grep "Up" | wc -l)
-TOTAL=$(docker-compose ps | tail -n +2 | wc -l)
+RUNNING=$(docker compose ps | grep "Up" | wc -l)
+TOTAL=$(docker compose ps | tail -n +2 | wc -l)
 echo "✅ Services: $RUNNING/$TOTAL running"
 
 # Check provider

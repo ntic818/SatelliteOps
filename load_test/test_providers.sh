@@ -9,7 +9,7 @@ for provider in "${PROVIDERS[@]}"; do
     sed -i "s/LLM_PROVIDER=.*/LLM_PROVIDER=$provider/" .env
     
     # Restart analyzer
-    docker-compose restart analyzer
+    docker compose restart analyzer
     
     # Wait 60 seconds
     echo "Waiting 60 seconds for analysis..."
