@@ -76,6 +76,29 @@ A production-ready, AI-powered satellite telemetry monitoring system that combin
 
 ## 🚀 Quick Start
 
+```
+
+Start
+  │
+  ├─→ Have Kubernetes? ──Yes──→ Use K8s deployment
+  │                      │
+  │                      No
+  │                      │
+  └─────────────────────→ Use Docker Compose
+                          │
+                          ├─→ 1. Get API key (xAI/OpenAI/Gemini)
+                          │
+                          ├─→ 2. Update .env: LLM_PROVIDER & API key
+                          │
+                          ├─→ 3. Run: ./quickstart.sh --auto
+                          │
+                          ├─→ 4. Open Grafana: http://localhost:3000
+                          │
+                          └─→ Done! ✅
+
+
+```
+
 ### Prerequisites
 ```bash
 # Docker & Docker Compose
